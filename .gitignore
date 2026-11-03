@@ -48,3 +48,13 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Local original and derived individual-level survey data
+/data/raw/
+/data/processed/
+*.sas7bdat
+*.sas7bcat
+*.sav
+*.zsav
+*.rds
+*.zip
