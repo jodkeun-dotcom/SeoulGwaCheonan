@@ -1,0 +1,27 @@
+"scope","variable","code","category","n","pct_of_scope"
+"all","sex","1","남자",3070,43.88
+"all","sex","2","여자",3927,56.12
+"all","sex","NA","결측",0,0
+"all","ho_incm","1","하",1225,17.51
+"all","ho_incm","2","중하",1677,23.97
+"all","ho_incm","3","중상",1972,28.18
+"all","ho_incm","4","상",2078,29.7
+"all","ho_incm","NA","결측",45,0.64
+"all","edu","1","초졸 이하",1759,25.14
+"all","edu","2","중졸",742,10.6
+"all","edu","3","고졸",1930,27.58
+"all","edu","4","대졸 이상",2333,33.34
+"all","edu","NA","결측",233,3.33
+"age_19plus_reference","sex","1","남자",2582,42.8
+"age_19plus_reference","sex","2","여자",3451,57.2
+"age_19plus_reference","sex","NA","결측",0,0
+"age_19plus_reference","ho_incm","1","하",1152,19.09
+"age_19plus_reference","ho_incm","2","중하",1410,23.37
+"age_19plus_reference","ho_incm","3","중상",1642,27.22
+"age_19plus_reference","ho_incm","4","상",1788,29.64
+"age_19plus_reference","ho_incm","NA","결측",41,0.68
+"age_19plus_reference","edu","1","초졸 이하",966,16.01
+"age_19plus_reference","edu","2","중졸",597,9.9
+"age_19plus_reference","edu","3","고졸",1912,31.69
+"age_19plus_reference","edu","4","대졸 이상",2333,38.67
+"age_19plus_reference","edu","NA","결측",225,3.73
