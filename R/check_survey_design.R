@@ -18,6 +18,7 @@ run_design_check <- function() {
   design <- make_knhanes_design(data)
   # 하위집단 선택 예시일 뿐 최종 분석대상 기준이 아닙니다.
   reference <- subset(design, !is.na(age) & age >= 19)
+  domain_audit <- audit_survey_domain(design, reference)
 
   psu_pairs <- unique(data.frame(stratum = data$kstrata, psu = data$psu))
   n_per_stratum <- as.integer(table(psu_pairs$stratum))
@@ -46,16 +47,17 @@ run_design_check <- function() {
     isTRUE(all.equal(as.numeric(stats::coef(ref_total)),
       sum(data$wt_itvex[!is.na(data$age) & data$age >= 19]), tolerance = 1e-8)))
 
-  out <- "reports/survey_design"
+  out <- "reports/survey_design/local"
   dir.create(out, recursive = TRUE, showWarnings = FALSE)
   write.csv(audit, file.path(out, "design_audit.csv"), row.names = FALSE)
+  write.csv(domain_audit, file.path(out, "domain_psu_audit.csv"), row.names = FALSE)
   writeLines(capture.output(utils::sessionInfo()), file.path(out, "session_info.txt"))
   package_versions <- data.frame(package = c("haven", "survey"),
     version = vapply(c("haven", "survey"), function(p) as.character(utils::packageVersion(p)), character(1)))
   write.csv(package_versions, file.path(out, "package_versions.csv"), row.names = FALSE)
 
   human_labels <- c("자료 인원", "중복 개인 ID", "가중치 결측", "0 이하 가중치",
-    "층 결측", "집락 결측", "층 수", "층 내 조사구 수", "층별 최소 조사구 수",
+    "층 결측", "집락 결측", "층 수", "전체 조사구 수", "층별 최소 조사구 수",
     "단일 조사구 층 수", "설계 자유도", "최소 가중치", "최대 가중치",
     "가중치 합", "19세 이상 참고 인원")
   display_values <- vapply(audit$value, function(v) format(round(v, 2),
@@ -76,13 +78,18 @@ run_design_check <- function() {
     "- 성별 지표 가중평균과 직접 가중계산 일치, 표준오차 유한·양수 확인.",
     "- 전체 설계 생성 후 subset으로 얻은 19세 이상 참고집단의 가중합 확인.",
     "- 검증 시 survey.lonely.psu='fail'로 두고 종료 시 원래 옵션으로 복구.", "",
+    "## subset 이후 조사구 점검", "",
+    paste0("원설계 ", nrow(domain_audit), "개 층을 기준으로 하위집단에서 관측된 조사구 수를 domain_psu_audit.csv에 기록했다. ",
+      "관측 조사구가 1개인 층 ", sum(domain_audit$n_psu_domain_observed == 1),
+      "개, 0개인 층 ", sum(domain_audit$n_psu_domain_observed == 0), "개이다."),
+    "이 관측 수는 원설계의 표본조사구 수와 구분한다. 하위집단에서 1개만 관측됐다고 원래 단일 조사구 층으로 간주하거나 설계를 재구축하지 않는다.", "",
     "## 아직 확정하지 않은 것", "",
     "- 19세 이상은 하위집단 선택 예시이며 최종 분석대상 선정이 아니다.",
     "- 임신·공복·Y 유효성, 비만 유형, 가족력·생활습관 결측 처리 및 최종 포함 여부는 팀 기준 통합 후 적용한다.",
     "- 현재 확인한 자료에 단일 조사구 층은 없으며, 추후 하위집단·모형에서 분산 문제가 발생하면 원인과 처리 방법을 별도 검토한다. 오류를 숨기기 위한 옵션을 일괄 적용하지 않는다.",
     "- 회귀모형·당뇨병 단계별 결과·정책 결론은 아직 산출하지 않았다.", "",
     "## 실행 후 객체", "",
-    "knhanes_design: 전체 원자료의 복합표본 설계. age19_reference_design: 참고 하위집단 설계.",
+    "knhanes_design: 전체 원자료의 복합표본 설계. age19_reference_example_design: 참고 하위집단 설계.",
     "객체에는 개인별 자료가 들어 있으므로 RDS/RData로 공개 저장소에 올리지 않는다.", "",
     "## 근거", "",
     "국민건강영양조사 제9기(2022–2024) 원시자료 이용지침서 책자 23–24쪽(가중치), 35–37쪽(복합표본 분석), 94쪽(변수명).",
@@ -94,6 +101,6 @@ run_design_check <- function() {
 }
 checked <- run_design_check()
 knhanes_design <- checked$design
-age19_reference_design <- checked$reference
+age19_reference_example_design <- checked$reference
 rm(checked)
-cat("설계 준비 완료. 객체는 메모리에만 있고 reports/survey_design에 집계 점검표를 저장했습니다.\n")
+cat("설계 준비 완료. 객체는 메모리에만 있고 reports/survey_design/local에 집계 점검표를 저장했습니다.\n")

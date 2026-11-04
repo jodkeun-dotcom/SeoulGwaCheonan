@@ -58,3 +58,6 @@ rsconnect/
 *.zsav
 *.rds
 *.zip
+
+# Each person's rerun outputs; reviewed snapshots remain tracked
+/reports/survey_design/local/

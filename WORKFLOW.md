@@ -10,7 +10,7 @@
 source("setup.R", encoding = "UTF-8")
 ```
 
-`haven`과 `survey`가 없으면 설치하고, 설치 버전과 세션 정보를 `reports/survey_design/`에 기록한다. 설치에는 인터넷이 필요할 수 있다.
+`haven`과 `survey`가 없으면 설치하고, 설치 버전과 세션 정보를 `reports/survey_design/local/`에 기록한다. 설치에는 인터넷이 필요할 수 있다.
 
 확인한 환경은 R 4.6.1, haven 2.5.5, survey 4.5이다. R 자체의 설치는 별도로 필요하다. 패키지 버전을 강제로 고정하는 잠금 파일은 아직 도입하지 않았으므로 팀원별 실행 기록을 비교해야 한다. 현재 환경에 없는 버전을 사용했다고 주장하지 않는다.
 
@@ -27,8 +27,9 @@ source("R/check_survey_design.R", encoding = "UTF-8")
 ```
 
 - `knhanes_design`: 전체 2024 건강설문·검진 자료의 설계객체
-- `age19_reference_design`: 전체 설계에서 `subset()`으로 고른 19세 이상 참고 객체
-- `reports/survey_design/`: 집계 점검표, 확인 결과, 패키지 버전과 실행환경 기록
+- `age19_reference_example_design`: 전체 설계에서 `subset()`으로 고른 19세 이상 참고 객체
+- `reports/survey_design/local/`: 각자 실행한 최신 집계표·환경 기록. Git 추적에서 제외된다.
+- `reports/survey_design/`의 커밋된 보고서는 검토용 고정 스냅숏이며, 스크립트가 덮어쓰지 않는다.
 
 19세 기준은 하위집단 분석 구현을 확인하는 예시다. 임신·공복·검사 유효성·결측 등 최종 분석대상 기준은 아직 확정하거나 적용하지 않았다.
 
@@ -36,10 +37,18 @@ source("R/check_survey_design.R", encoding = "UTF-8")
 
 ```r
 # 하위집단 선택 방식 예시 — 최종 분석대상 정의가 아님
-adult_reference <- subset(knhanes_design, !is.na(age) & age >= 19)
+adult_reference_example <- subset(knhanes_design, !is.na(age) & age >= 19)
 ```
 
 가중치·층·집락·연도·개인 ID 문제가 있으면 함수가 멈추므로 원인을 검토한다. 자동으로 대상자를 삭제하거나 가중치를 임의로 바꾸지 않는다. 분석에 따라 단일 조사구나 분산추정 오류가 발생하면 원인과 처리 방법을 문서화해 합의한다.
+
+최종 회귀분석 스크립트에도 분석 시작 시 아래 설정을 명시한다. 단일 조사구 처리 방식 변경이 필요하면 근거를 남기고 팀이 합의한다.
+
+```r
+options(survey.lonely.psu = "fail", survey.adjust.domain.lonely = FALSE)
+```
+
+`check_survey_design.R`은 이 설정을 검증 동안만 적용하고 원래 설정으로 복구하므로, 최종 분석 코드에서 다시 명시해야 한다. `domain_psu_audit.csv`는 subset 이후 각 층에 관측된 조사구 수와 원설계 조사구 수를 구분해 기록한다. 하위집단 관측 조사구가 1개인 것과 원설계의 단일 조사구 층은 다르며, 이 수만으로 표준오차 처리 옵션을 자동 변경하지 않는다.
 
 기본 변수 확인(PR #8)을 머지한 뒤에는 다음도 실행할 수 있다.
 
@@ -54,6 +63,8 @@ source("tests/test_survey_design.R", encoding = "UTF-8")
 ```
 
 또는 프로젝트 루트에서 `Rscript tests/test_survey_design.R`로 실행한다. 이 검증은 합성 예제만 사용한다. 실제 파일 검증은 `R/check_survey_design.R`에서 수행한다.
+
+실행 산출물이 스냅숏을 덮어쓰지 않는지 확인하려면 원시자료를 준비한 뒤 `source("tests/test_local_outputs.R", encoding = "UTF-8")`를 실행한다.
 
 ## 협업·공유
 

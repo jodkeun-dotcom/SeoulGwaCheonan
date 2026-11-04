@@ -15,9 +15,30 @@ make_knhanes_design <- function(data) {
     stop("가중치의 결측·비유한·0 이하 값을 확인하세요. 자동 제외하지 않습니다.", call. = FALSE)
   }
   if (anyNA(data$kstrata) || anyNA(data$psu) ||
+      any(trimws(as.character(data$kstrata)) == "") ||
       any(trimws(as.character(data$psu)) == "")) {
     stop("층·집락 식별자의 결측을 확인하세요. 자동 제외하지 않습니다.", call. = FALSE)
   }
   survey::svydesign(ids = ~psu, strata = ~kstrata,
     weights = ~wt_itvex, data = as.data.frame(data), nest = TRUE)
+}
+
+# 원설계의 조사구 수와 하위집단에서 실제 관측된 조사구 수를 구분합니다.
+# 이 점검표만으로 단일 조사구 보정 옵션을 자동으로 변경하지 않습니다.
+audit_survey_domain <- function(full_design, domain_design) {
+  full <- full_design$variables
+  domain <- domain_design$variables
+  required <- c("kstrata", "psu")
+  if (!all(required %in% names(full)) || !all(required %in% names(domain))) {
+    stop("설계객체의 kstrata·psu를 확인하세요.", call. = FALSE)
+  }
+  levels <- unique(as.character(full$kstrata))
+  count_psu <- function(x) {
+    pairs <- unique(data.frame(stratum = as.character(x$kstrata),
+                               psu = as.character(x$psu)))
+    if (any(!pairs$stratum %in% levels)) stop("원설계에 없는 층이 있습니다.")
+    as.integer(table(factor(pairs$stratum, levels = levels)))
+  }
+  data.frame(stratum = levels, n_psu_full = count_psu(full),
+             n_psu_domain_observed = count_psu(domain))
 }

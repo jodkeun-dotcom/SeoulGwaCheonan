@@ -30,3 +30,14 @@ tryCatch({
   expect_error(make_knhanes_design(example[, names(example) != "psu"]), "필수 변수")
   cat("통과: 하위집단 가중합·원자료 보존·잘못된 설계 입력 차단\n")
 }, finally = options(previous))
+
+bad <- example; bad$kstrata <- as.character(bad$kstrata); bad$kstrata[1] <- "  "
+expect_error(make_knhanes_design(bad), "층·집락")
+bad <- example; bad$psu[1] <- "  "
+expect_error(make_knhanes_design(bad), "층·집락")
+domain <- subset(d, age < 20)
+audit <- audit_survey_domain(d, domain)
+stopifnot(all(audit$n_psu_full == 2), all(audit$n_psu_domain_observed == 1))
+empty_stratum <- audit_survey_domain(d, subset(d, age < 14))
+stopifnot(identical(empty_stratum$n_psu_domain_observed, c(1L, 0L)))
+cat("통과: 빈 층·집락 코드 차단, subset의 관측 조사구 수와 원설계 구분\n")
