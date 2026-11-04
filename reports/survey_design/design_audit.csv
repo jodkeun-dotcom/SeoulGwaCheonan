@@ -1,0 +1,16 @@
+"item","value"
+"records",6997
+"duplicate_ID",0
+"missing_weight",0
+"nonpositive_weight",0
+"missing_stratum",0
+"missing_psu",0
+"strata",27
+"psu_within_strata",192
+"min_psu_per_stratum",2
+"single_psu_strata",0
+"design_df",165
+"weight_min",314.853523674154
+"weight_max",30575.0375238792
+"weight_sum",51522035
+"reference_age19_records",6033
