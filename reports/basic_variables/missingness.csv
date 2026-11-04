@@ -1,0 +1,9 @@
+"scope","variable","n_total","n_valid","n_missing","missing_pct","n_invalid"
+"all","age",6997,6997,0,0,0
+"all","sex",6997,6997,0,0,0
+"all","ho_incm",6997,6952,45,0.64,0
+"all","edu",6997,6764,233,3.33,0
+"age_19plus_reference","age",6033,6033,0,0,0
+"age_19plus_reference","sex",6033,6033,0,0,0
+"age_19plus_reference","ho_incm",6033,5992,41,0.68,0
+"age_19plus_reference","edu",6033,5808,225,3.73,0
