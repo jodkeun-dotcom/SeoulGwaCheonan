@@ -2,7 +2,7 @@
 # 원자료를 수정하거나 개인별 자료를 저장하지 않고 집계 점검표만 생성합니다.
 
 if (!file.exists("R/read_knhanes_2024.R")) {
-  stop("작업 폴더를 범주형_팀플 저장소 루트로 설정해 주세요.")
+  stop("작업 폴더를 SeoulGwaCheonan 저장소 루트로 설정해 주세요.")
 }
 source("R/read_knhanes_2024.R", encoding = "UTF-8")
 paths <- c("data/raw/HN24_ALL(SAS).zip", "data/HN24_ALL(SAS).zip")
@@ -71,6 +71,9 @@ derived <- list(dm_fh = dm_fh, smk3 = smk3)
 derived_levels <- list(dm_fh = c("없음", "있음", "모름"), smk3 = c("비흡연", "과거흡연", "현재흡연"))
 scopes <- list(all = rep(TRUE, length(age)),
                age_19plus_reference = !is.na(age) & age >= 19)
+# 흡연 원문항은 모름(9)과 결측(NA)이 모두 sm_presnt 결측이고, 19세 이상 NA가 5명 미만이라
+# 다른 표에서 역산되지 않도록 두 값을 합쳐 표시합니다.
+merge_9_na <- c("BS1_1", "BS3_1")
 
 # 19세 이상은 비교용 기준입니다. 최종 분석대상 확정·제외를 수행하지 않습니다.
 audit <- do.call(rbind, lapply(names(scopes), function(scope) {
@@ -78,10 +81,12 @@ audit <- do.call(rbind, lapply(names(scopes), function(scope) {
   rbind(
     do.call(rbind, lapply(variables, function(v) {
       x <- raw[[v]][idx]
+      merged <- v %in% merge_9_na
+      n_missing <- sum(is.na(x)) + if (merged) sum(x %in% 9) else 0L
       data.frame(scope = scope, variable = v, type = "원변수", n_total = length(x),
         n_valid = sum(!is.na(x) & !x %in% c(8, 9)),
-        n_not_applicable_8 = sum(x %in% 8), n_unknown_9 = sum(x %in% 9),
-        n_missing = sum(is.na(x)), missing_pct = round(100 * mean(is.na(x)), 2))
+        n_not_applicable_8 = sum(x %in% 8), n_unknown_9 = if (merged) NA else sum(x %in% 9),
+        n_missing = n_missing, missing_pct = round(100 * n_missing / length(x), 2))
     })),
     do.call(rbind, lapply(names(derived), function(v) {
       x <- derived[[v]][idx]
@@ -96,11 +101,17 @@ frequencies <- do.call(rbind, lapply(names(scopes), function(scope) {
   rbind(
     do.call(rbind, lapply(variables, function(v) {
       x <- raw[[v]][idx]
+      codes <- c(names(labels[[v]]), "NA")
+      cats <- c(unname(labels[[v]]), "결측")
       n <- c(vapply(as.numeric(names(labels[[v]])), function(k) sum(x %in% k), integer(1)),
              sum(is.na(x)))
+      if (v %in% merge_9_na) {
+        k <- codes %in% c("9", "NA")
+        n <- c(n[!k], sum(n[k])); codes <- c(codes[!k], "9/NA")
+        cats <- c(cats[!k], "모름, 무응답 또는 결측")
+      }
       stopifnot(sum(n) == length(x))
-      data.frame(scope = scope, variable = v, code = c(names(labels[[v]]), "NA"),
-        category = c(unname(labels[[v]]), "결측"), n = n,
+      data.frame(scope = scope, variable = v, code = codes, category = cats, n = n,
         pct_of_scope = round(100 * n / length(x), 2))
     })),
     do.call(rbind, lapply(names(derived), function(v) {
@@ -120,16 +131,20 @@ count_by <- function(df) {
   names(tab)[ncol(tab)] <- "n"
   tab[tab$n > 0, ]
 }
-smoking_crosstab <- count_by(data.frame(BS1_1 = na_code(bs1[adult]), BS3_1 = na_code(bs3[adult]),
+code_9_na <- function(x) ifelse(is.na(x) | x %in% 9, "9/NA", as.character(x))
+smoking_crosstab <- count_by(data.frame(BS1_1 = code_9_na(bs1[adult]), BS3_1 = code_9_na(bs3[adult]),
   sm_presnt = na_code(sm[adult]), smk3 = na_code(smk3[adult])))
 smoking_crosstab <- smoking_crosstab[order(smoking_crosstab$BS1_1, smoking_crosstab$BS3_1), ]
-fh_crosstab <- count_by(data.frame(HE_DMfh1 = na_code(fh[adult, 1]), HE_DMfh2 = na_code(fh[adult, 2]),
-  HE_DMfh3 = na_code(fh[adult, 3]), dm_fh = na_code(dm_fh[adult])))
-fh_crosstab <- fh_crosstab[order(fh_crosstab$HE_DMfh1, fh_crosstab$HE_DMfh2, fh_crosstab$HE_DMfh3), ]
+# 부·모·형제자매 3원표는 작은 칸이 많고 합계로 역산될 수 있어 2원표 두 개로 나눕니다.
+fh_parents_crosstab <- count_by(data.frame(HE_DMfh1 = na_code(fh[adult, 1]), HE_DMfh2 = na_code(fh[adult, 2])))
+fh_parents_crosstab <- fh_parents_crosstab[order(fh_parents_crosstab$HE_DMfh1, fh_parents_crosstab$HE_DMfh2), ]
+fh_sibling_crosstab <- count_by(data.frame(HE_DMfh3 = na_code(fh[adult, 3]), dm_fh = na_code(dm_fh[adult])))
+fh_sibling_crosstab <- fh_sibling_crosstab[order(fh_sibling_crosstab$HE_DMfh3, fh_sibling_crosstab$dm_fh), ]
 # 공개 저장소라 교차표의 5명 미만 칸은 "<5"로 가립니다(팀 기준 확정 전 제안).
 mask_small <- function(tab) { tab$n <- ifelse(tab$n < 5, "<5", as.character(tab$n)); tab }
 smoking_crosstab <- mask_small(smoking_crosstab)
-fh_crosstab <- mask_small(fh_crosstab)
+fh_parents_crosstab <- mask_small(fh_parents_crosstab)
+fh_sibling_crosstab <- mask_small(fh_sibling_crosstab)
 
 # 결측 겹침: 흡연 결측은 sm_presnt 결측(BS1_1 모름·무응답 포함)입니다.
 miss <- data.frame(dm_fh = is.na(dm_fh), pa_aerobic = is.na(raw$pa_aerobic),
@@ -180,6 +195,24 @@ dictionary <- data.frame(
     "책자 43쪽 표 19(산출 프로그램), 165~169쪽(문항·정의, 분모 19세 이상)",
     "책자 42쪽 표 18(프로그램), 142~144쪽(문항·코드, 분모 12세 이상)"))
 
+# 가족력은 2024년 19세 이상 조사 항목이라 전체 범위 표는 싣지 않습니다.
+# 전체와 19세 이상의 차이로 19세 미만 응답의 작은 칸이 역산되기 때문입니다(19세 미만 응답 수는 guide_discrepancies에만 기록).
+fh_vars <- c("HE_DMfh1", "HE_DMfh2", "HE_DMfh3", "HE_fh", "dm_fh")
+audit <- audit[!(audit$scope == "all" & audit$variable %in% fh_vars), ]
+frequencies <- frequencies[!(frequencies$scope == "all" & frequencies$variable %in% fh_vars), ]
+
+# 공개하는 집계표에 1~4명 칸이 남아 있거나 범위 간 차이로 1~4명이 계산되면 중단합니다(가린 칸 역산 방지).
+count_cols <- c("n_valid", "n_not_applicable_8", "n_unknown_9", "n_missing")
+scope_diff <- function(tab, keys, cols) {
+  m <- merge(tab[tab$scope == "all", ], tab[tab$scope == "age_19plus_reference", ], by = keys)
+  unlist(lapply(cols, function(k) m[[paste0(k, ".x")]] - m[[paste0(k, ".y")]]))
+}
+published_counts <- list(audit[, count_cols], frequencies$n, missing_overlap[, -1], missing_count$n,
+  additional_exclusion$n, guide_discrepancies$n,
+  scope_diff(frequencies, c("variable", "code"), "n"), scope_diff(audit, "variable", count_cols))
+small <- unlist(lapply(published_counts, function(x) unlist(x)))
+if (any(small %in% 1:4)) stop("공개 집계표에 5명 미만 칸이 있습니다. 범주를 묶거나 가려 주세요.")
+
 out <- file.path("reports", "lifestyle_variables")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 save_csv <- function(x, name) write.csv(x, file.path(out, name), row.names = FALSE, fileEncoding = "UTF-8")
@@ -187,7 +220,9 @@ save_csv(dictionary, "variable_dictionary.csv")
 save_csv(audit, "missingness.csv")
 save_csv(frequencies, "frequencies.csv")
 save_csv(smoking_crosstab, "crosstab_smoking.csv")
-save_csv(fh_crosstab, "crosstab_family_history.csv")
+save_csv(fh_parents_crosstab, "crosstab_family_history_parents.csv")
+save_csv(fh_sibling_crosstab, "crosstab_family_history_sibling.csv")
+unlink(file.path(out, "crosstab_family_history.csv"))
 save_csv(missing_overlap, "missing_overlap.csv")
 save_csv(missing_count, "missing_count.csv")
 save_csv(additional_exclusion, "additional_exclusion.csv")
@@ -226,10 +261,17 @@ report <- c(
   "## 19세 이상 분포(생성변수·사용 변수)", "", md_table(adult_freq), "",
   "## 결측·비해당 점검", "", md_table(audit), "",
   "n_valid는 결측·8·9를 뺀 응답 수다. 생성변수는 8·9가 이미 범주로 정리되어 있다.", "",
-  "## 흡연 교차표(19세 이상)", "",
-  "공개 저장소라 교차표의 5명 미만 칸은 <5로 표시했다(팀 기준 확정 전 제안).", "",
-  md_table(smoking_crosstab), "",
-  "## 당뇨병 가족력 교차표(19세 이상)", "", md_table(fh_crosstab), "",
+  "## 작은 칸 공개 기준", "",
+  "공개 저장소라 교차표의 5명 미만 칸은 <5로 표시한다(팀 기준 확정 전 제안).",
+  "다른 표의 합계로 가린 칸이 역산되지 않도록 다음과 같이 묶었고, 공개 집계표에 1~4명 칸이 남으면 스크립트가 중단된다.",
+  "- BS1_1·BS3_1의 모름·무응답(9)과 결측(NA)은 모두 sm_presnt 결측이므로 9/NA 한 범주로 합쳐 표시한다(missingness.csv에서는 n_missing에 포함).",
+  "- 당뇨병 가족력은 부·모·형제자매 3원표 대신 부×모, 형제자매×dm_fh 2원표 두 개로 제공한다.",
+  "- 가족력 변수(HE_DMfh1~3, HE_fh, dm_fh)는 2024년 19세 이상 조사 항목이므로 결측표·빈도표에 19세 이상 범위만 싣는다. 전체와 19세 이상의 차이로 19세 미만의 작은 칸이 계산되기 때문이며, 19세 미만 응답 수는 '자료와 지침서가 다른 점'에만 기록한다.",
+  "- 스크립트는 전체와 19세 이상 범위의 차이로 1~4명이 계산되는 경우도 검사한다.", "",
+  "## 흡연 교차표(19세 이상)", "", md_table(smoking_crosstab), "",
+  "## 당뇨병 가족력 교차표(19세 이상)", "",
+  "부(HE_DMfh1) × 모(HE_DMfh2):", "", md_table(fh_parents_crosstab), "",
+  "형제자매(HE_DMfh3) × 합친 값(dm_fh):", "", md_table(fh_sibling_crosstab), "",
   "## 결측 겹침(19세 이상)", "",
   "대각선은 변수별 결측 수, 나머지는 두 변수가 함께 결측인 인원이다.", "",
   md_table(missing_overlap), "",
