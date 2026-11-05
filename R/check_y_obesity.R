@@ -41,7 +41,7 @@ if (!y_match) stop("지침서 규칙으로 재현한 Y가 HE_DM_HbA1c와 다릅�
 
 # 2. 비만 유형 -----------------------------------------------------------------
 # BMI 비만: HE_BMI >= 25 (지침서 179쪽 HE_obe 4~6단계와 동일 경계).
-# 복부비만: 남자 HE_wc >= 90cm, 여자 >= 85cm (대한비만학회 진료지침; 지침서에는 절단값 없음).
+# 복부비만: 남자 HE_wc >= 90cm, 여자 >= 85cm (대한비만학회 2022 비만 진료지침; 지침서에는 절단값 없음).
 # 둘 중 하나라도 결측이면 비만 유형도 결측. '비만 아님'으로 바꾸지 않는다.
 bmi_obese <- v$HE_BMI >= 25
 abd_obese <- ifelse(v$sex == 1, v$HE_wc >= 90, v$HE_wc >= 85)
@@ -127,7 +127,7 @@ dictionary <- data.frame(
   source = c(
     "지침서 180쪽(정의), 44쪽 표 20(SAS 프로그램), 104-105쪽(DE1 코드)",
     "지침서 179쪽(HE_obe 정의), 44쪽 표 20",
-    "대한비만학회 비만 진료지침(허리둘레 절단값). 지침서 179쪽은 측정값만 제공",
+    "대한비만학회 2022 비만 진료지침(Haam et al., J Obes Metab Syndr 2023;32:121-129). 지침서 179쪽은 측정값만 제공",
     "위 두 기준의 조합(팀 정의)"),
   note = c(
     "혈당·당화혈색소·의사진단·투약 변수는 Y 판정에 쓰였으므로 X에서 제외",
@@ -177,12 +177,12 @@ report <- c(
   "- 분석대상 연령: 19세 이상 유지 또는 30세 이상(19-29세는 당뇨병 인원이 적음).",
   "- 희소 칸(BMI 비만·복부비만 아님 × 당뇨병) 처리와 2주차 가중 비율 점검.",
   "- 비만 유형 집단 이름 최종안과 저체중 별도 구분 여부.",
-  "- 복부비만 기준 출처(대한비만학회 진료지침 판본) 확정.", "",
+  "",
   "## 재실행", "", "```r",
   "source(\"R/check_y_obesity.R\", encoding = \"UTF-8\")", "```", "",
   "## 근거", "",
   "국민건강영양조사 제9기(2022–2024) 원시자료 이용지침서 책자 44쪽(표 20 주요지표 SAS 프로그램), 104–105쪽(당뇨병 설문 DE1), 174쪽(공복시간·임신), 179쪽(신체계측·HE_obe), 180쪽(HE_DM_HbA1c).",
-  "복부비만 절단값: 대한비만학회 비만 진료지침.",
+  "복부비만 절단값(남자 90cm, 여자 85cm): 대한비만학회 2022 비만 진료지침. Haam JH, et al. Diagnosis of Obesity: 2022 Update of Clinical Practice Guidelines for Obesity by the Korean Society for the Study of Obesity. J Obes Metab Syndr. 2023;32(2):121-129. doi:10.7570/jomes23031",
   "공식 출처: https://knhanes.kdca.go.kr/knhanes/main.do")
 writeLines(report, file.path(out, "README.md"), useBytes = TRUE)
 cat("완료: ", out, "\n", sep = "")
