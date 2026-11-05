@@ -1,0 +1,68 @@
+"scope","variable","code","category","n","pct_of_scope"
+"all","BS1_1","1","5갑(100개비) 미만",130,1.86
+"all","BS1_1","2","5갑(100개비) 이상",2037,29.11
+"all","BS1_1","3","피운 적 없음",3648,52.14
+"all","BS1_1","8","비해당(소아, 청소년)",957,13.68
+"all","BS1_1","9/NA","모름, 무응답 또는 결측",225,3.22
+"all","BS3_1","1","매일피움",681,9.73
+"all","BS3_1","2","가끔피움",118,1.69
+"all","BS3_1","3","과거엔 피웠으나 현재 피우지 않음",1368,19.55
+"all","BS3_1","8","비해당(문항1-③⑧)",4605,65.81
+"all","BS3_1","9/NA","모름, 무응답 또는 결측",225,3.22
+"all","sm_presnt","0","과거 흡연, 비흡연",5023,71.79
+"all","sm_presnt","1","현재흡연",792,11.32
+"all","sm_presnt","NA","결측",1182,16.89
+"all","pa_aerobic","0","미실천",3069,43.86
+"all","pa_aerobic","1","실천",2414,34.5
+"all","pa_aerobic","NA","결측",1514,21.64
+"all","dr_month","0","평생비음주, 최근 1년간 월1회미만 음주",3229,46.15
+"all","dr_month","1","최근 1년간 월1회이상 음주",2982,42.62
+"all","dr_month","NA","결측",786,11.23
+"all","smk3","비흡연","비흡연",3778,53.99
+"all","smk3","과거흡연","과거흡연",1245,17.79
+"all","smk3","현재흡연","현재흡연",792,11.32
+"all","smk3","NA","결측",1182,16.89
+"age_19plus_reference","HE_DMfh1","0","아니오",4579,75.9
+"age_19plus_reference","HE_DMfh1","1","예",746,12.37
+"age_19plus_reference","HE_DMfh1","9","모름/무응답",267,4.43
+"age_19plus_reference","HE_DMfh1","NA","결측",441,7.31
+"age_19plus_reference","HE_DMfh2","0","아니오",4571,75.77
+"age_19plus_reference","HE_DMfh2","1","예",801,13.28
+"age_19plus_reference","HE_DMfh2","9","모름/무응답",220,3.65
+"age_19plus_reference","HE_DMfh2","NA","결측",441,7.31
+"age_19plus_reference","HE_DMfh3","0","아니오",4784,79.3
+"age_19plus_reference","HE_DMfh3","1","예",551,9.13
+"age_19plus_reference","HE_DMfh3","8","비해당(외동)",108,1.79
+"age_19plus_reference","HE_DMfh3","9","모름/무응답",149,2.47
+"age_19plus_reference","HE_DMfh3","NA","결측",441,7.31
+"age_19plus_reference","HE_fh","0","아니오",2472,40.97
+"age_19plus_reference","HE_fh","1","예",3041,50.41
+"age_19plus_reference","HE_fh","9","모름",79,1.31
+"age_19plus_reference","HE_fh","NA","결측",441,7.31
+"age_19plus_reference","BS1_1","1","5갑(100개비) 미만",130,2.15
+"age_19plus_reference","BS1_1","2","5갑(100개비) 이상",2037,33.76
+"age_19plus_reference","BS1_1","3","피운 적 없음",3648,60.47
+"age_19plus_reference","BS1_1","8","비해당(소아, 청소년)",0,0
+"age_19plus_reference","BS1_1","9/NA","모름, 무응답 또는 결측",218,3.61
+"age_19plus_reference","BS3_1","1","매일피움",681,11.29
+"age_19plus_reference","BS3_1","2","가끔피움",118,1.96
+"age_19plus_reference","BS3_1","3","과거엔 피웠으나 현재 피우지 않음",1368,22.68
+"age_19plus_reference","BS3_1","8","비해당(문항1-③⑧)",3648,60.47
+"age_19plus_reference","BS3_1","9/NA","모름, 무응답 또는 결측",218,3.61
+"age_19plus_reference","sm_presnt","0","과거 흡연, 비흡연",5023,83.26
+"age_19plus_reference","sm_presnt","1","현재흡연",792,13.13
+"age_19plus_reference","sm_presnt","NA","결측",218,3.61
+"age_19plus_reference","pa_aerobic","0","미실천",3069,50.87
+"age_19plus_reference","pa_aerobic","1","실천",2414,40.01
+"age_19plus_reference","pa_aerobic","NA","결측",550,9.12
+"age_19plus_reference","dr_month","0","평생비음주, 최근 1년간 월1회미만 음주",2851,47.26
+"age_19plus_reference","dr_month","1","최근 1년간 월1회이상 음주",2965,49.15
+"age_19plus_reference","dr_month","NA","결측",217,3.6
+"age_19plus_reference","dm_fh","없음","없음",3601,59.69
+"age_19plus_reference","dm_fh","있음","있음",1767,29.29
+"age_19plus_reference","dm_fh","모름","모름",224,3.71
+"age_19plus_reference","dm_fh","NA","결측",441,7.31
+"age_19plus_reference","smk3","비흡연","비흡연",3778,62.62
+"age_19plus_reference","smk3","과거흡연","과거흡연",1245,20.64
+"age_19plus_reference","smk3","현재흡연","현재흡연",792,13.13
+"age_19plus_reference","smk3","NA","결측",218,3.61
