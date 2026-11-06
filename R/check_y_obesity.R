@@ -76,8 +76,24 @@ step4 <- step3 & !is.na(obesity_type)
 row <- function(step, reason, excluded, remaining) {
   data.frame(step = step, reason = reason, n_excluded = excluded, n_remaining = remaining)
 }
-y_tab <- table(y_reason[step2], useNA = "no")
-ob_tab <- table(ob_reason[step3], useNA = "no")
+# 내부 판정은 세부 사유로 유지하고, 공개 표에서는 5명 미만 사유를 인접 사유와 묶는다.
+# (단순 <5 표기는 소계로 역산되므로 묶음으로 처리. 소계·남은 인원은 바뀌지 않는다.)
+# 사유는 factor 수준으로 순서를 고정해 PC 언어 설정과 관계없이 같은 파일이 나오게 한다.
+y_detail_levels <- c("공복 8시간 미만", "혈액검사·공복시간 결측",
+                     "당뇨병 설문 모름·무응답·결측", "임신", "기타")
+y_public <- c("공복 8시간 미만" = "공복 8시간 미만",
+              "혈액검사·공복시간 결측" = "혈액검사·공복시간·당뇨병 설문 결측",
+              "당뇨병 설문 모름·무응답·결측" = "혈액검사·공복시간·당뇨병 설문 결측",
+              "임신" = "임신", "기타" = "기타")
+ob_levels <- c("허리둘레 결측", "BMI 결측", "BMI·허리둘레 모두 결측")
+y_detail_tab <- table(factor(y_reason[step2], levels = y_detail_levels))
+stopifnot(y_detail_tab[["기타"]] == 0)
+y_tab <- table(factor(unname(y_public[y_reason[step2]]),
+                      levels = setdiff(unique(unname(y_public)), "기타")))
+ob_tab <- table(factor(ob_reason[step3], levels = ob_levels))
+stopifnot(sum(y_tab) == sum(y_detail_tab), sum(y_tab) == sum(step2 & is.na(v$HE_DM_HbA1c)),
+          sum(ob_tab) == sum(step3 & is.na(obesity_type)),
+          all(y_tab >= 5), all(ob_tab >= 5))
 flow <- rbind(
   row(0, "2024 전체 자료", NA, length(adult)),
   row(1, "19세 미만", sum(!adult), sum(step2)),
