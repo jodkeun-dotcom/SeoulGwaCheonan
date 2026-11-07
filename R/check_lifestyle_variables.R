@@ -166,6 +166,40 @@ additional_exclusion <- data.frame(
         vapply(miss, function(m) sum(base_ok & m), integer(1))))
 additional_exclusion$pct_of_base <- c(NA, NA, round(100 * additional_exclusion$n[-(1:2)] / sum(base_ok), 2))
 
+# 분석대상 기준(PR #11)에 맞춰 계산: 19세 이상 → Y 결측 제외 → 비만 유형 결측 제외가 분석대상 후보다.
+# 비만 유형은 BMI >= 25, 허리둘레 남자 >= 90cm·여자 >= 85cm의 조합이며 둘 중 하나라도 결측이면 결측이다.
+sex <- col("sex")
+bmi_obese <- base_cols$HE_BMI >= 25
+abd_obese <- ifelse(sex == 1, base_cols$HE_wc >= 90, base_cols$HE_wc >= 85)
+obesity_labels <- c("BMI 비만 아님·복부비만 아님", "BMI 비만 아님·복부비만",
+                    "BMI 비만·복부비만 아님", "BMI 비만·복부비만")
+obesity_type <- factor(1 + abd_obese + 2 * bmi_obese, 1:4, obesity_labels)
+dm_stage <- factor(base_cols$Y, 1:3, c("정상", "당뇨병 전단계", "당뇨병"))
+candidate <- adult & !is.na(dm_stage) & !is.na(obesity_type)
+stopifnot(identical(candidate, base_ok))
+complete <- candidate & n_miss == 0
+
+# 연령 기준은 팀 결정 전이라 19세 이상과 30세 이상(PR #11 결정 안건) 두 경우를 함께 계산한다.
+age_scenarios <- list("19세 이상" = adult, "30세 이상" = !is.na(age) & age >= 30)
+exclusion_by_age <- do.call(rbind, lapply(names(age_scenarios), function(s) {
+  idx <- candidate & age_scenarios[[s]]
+  data.frame(age_scenario = s, n_candidate = sum(idx), n_complete = sum(idx & n_miss == 0),
+    n_excluded = sum(idx & n_miss > 0), excluded_pct = round(100 * mean(n_miss[idx] > 0), 2),
+    dm_fh_missing = sum(idx & miss$dm_fh), pa_aerobic_missing = sum(idx & miss$pa_aerobic),
+    smk3_missing = sum(idx & miss$smk3), dr_month_missing = sum(idx & miss$dr_month))
+}))
+
+# 생활습관 결측 제외가 비만 유형 × 당뇨병 단계 칸마다 다르게 일어나는지 본다(19세 이상 기준).
+cells <- expand.grid(dm_stage = levels(dm_stage), obesity_type = levels(obesity_type),
+                     stringsAsFactors = FALSE)[, 2:1]
+exclusion_by_cell <- do.call(rbind, lapply(seq_len(nrow(cells)), function(i) {
+  idx <- candidate & obesity_type %in% cells$obesity_type[i] & dm_stage %in% cells$dm_stage[i]
+  data.frame(cells[i, ], n_candidate = sum(idx), n_complete = sum(idx & n_miss == 0),
+    n_excluded = sum(idx & n_miss > 0), excluded_pct = round(100 * mean(n_miss[idx] > 0), 2))
+}))
+stopifnot(sum(exclusion_by_cell$n_candidate) == sum(candidate),
+          sum(exclusion_by_cell$n_complete) == sum(complete))
+
 guide_discrepancies <- data.frame(
   item = c("19세 미만 가족력 응답", "HE_fh=0인데 HE_DMfh1=1"),
   scope = c("19세 미만", "age_19plus_reference"),
@@ -208,7 +242,8 @@ scope_diff <- function(tab, keys, cols) {
   unlist(lapply(cols, function(k) m[[paste0(k, ".x")]] - m[[paste0(k, ".y")]]))
 }
 published_counts <- list(audit[, count_cols], frequencies$n, missing_overlap[, -1], missing_count$n,
-  additional_exclusion$n, guide_discrepancies$n,
+  additional_exclusion$n, guide_discrepancies$n, exclusion_by_age[, -c(1, 5)],
+  exclusion_by_cell[, c("n_candidate", "n_complete", "n_excluded")],
   scope_diff(frequencies, c("variable", "code"), "n"), scope_diff(audit, "variable", count_cols))
 small <- unlist(lapply(published_counts, function(x) unlist(x)))
 if (any(small %in% 1:4)) stop("공개 집계표에 5명 미만 칸이 있습니다. 범주를 묶거나 가려 주세요.")
@@ -226,6 +261,8 @@ unlink(file.path(out, "crosstab_family_history.csv"))
 save_csv(missing_overlap, "missing_overlap.csv")
 save_csv(missing_count, "missing_count.csv")
 save_csv(additional_exclusion, "additional_exclusion.csv")
+save_csv(exclusion_by_age, "exclusion_by_age_scenario.csv")
+save_csv(exclusion_by_cell, "exclusion_by_obesity_dm_stage.csv")
 save_csv(guide_discrepancies, "guide_discrepancies.csv")
 
 md_table <- function(x) {
@@ -241,7 +278,7 @@ report <- c(
   "## 범위", "",
   "2024 기본DB를 R로 읽어 가족력·생활습관 변수의 정의·코드·결측·비해당·비가중 분포를 확인하고 재코딩 규칙을 정했다.",
   "all은 전체 자료, age_19plus_reference는 19세 이상 참고 집단이다.",
-  "19세 기준은 비교용이며 최종 분석대상 확정이 아니다. 임신·공복 등 세은 담당 제외 기준은 아직 적용하지 않았다.",
+  "결측표·빈도표의 19세 기준은 비교용이며 최종 분석대상 확정이 아니다. 추가 제외 인원은 분석대상 기준(PR #11)에 맞는 분석대상 후보로 계산했다.",
   "모든 인원과 비율은 비가중 기술점검 값이며 국민 전체의 비율·최종 분석결과가 아니다.",
   "원자료는 수정하지 않았고 생성변수(dm_fh, smk3)는 스크립트 안에서만 만든다.", "",
   "## 재코딩표", "", md_table(dictionary), "",
@@ -278,14 +315,22 @@ report <- c(
   "흡연·음주 결측은 거의 같은 사람으로, 건강설문 미응답으로 보인다.", "",
   "## 결측 개수별 인원", "", md_table(missing_count), "",
   "## 생활습관 변수로 인한 추가 제외", "",
-  "Y(당뇨병 단계)·HE_BMI·HE_wc가 모두 있는 19세 이상을 기준으로 계산했다. 세은 기준 확정 후 다시 계산한다.", "",
+  "분석대상 기준(PR #11: 19세 이상 → Y 결측 제외 → 비만 유형 결측 제외)에 맞는 분석대상 후보로 계산했다.",
+  "이 후보 집단은 Y(당뇨병 단계)·HE_BMI·HE_wc가 모두 있는 19세 이상과 같으며, 스크립트에서 두 정의가 일치함을 확인한다.",
+  "임신·공복 8시간 미만·당뇨병 설문 모름은 원자료에서 이미 Y 결측이므로 별도로 다시 빼지 않는다.", "",
   md_table(additional_exclusion), "",
+  "### 연령 기준별 추가 제외", "",
+  "연령 기준(19세 이상 유지 또는 30세 이상)은 팀 결정 전이므로 두 경우를 모두 계산했다. 변수별 결측은 중복을 포함한다.", "",
+  md_table(exclusion_by_age), "",
+  "### 비만 유형 × 당뇨병 단계별 추가 제외(19세 이상)", "",
+  "생활습관 결측으로 빠지는 비율이 칸마다 크게 다르면 모형 1~3 동일표본 비교에서 치우침이 생길 수 있어 칸별로 확인했다.", "",
+  md_table(exclusion_by_cell), "",
   "## 자료와 지침서가 다른 점", "", md_table(guide_discrepancies), "",
   "## 팀 결정 필요", "",
   "- 전자담배: 주 변수(smk3)에는 넣지 않았다. 관련 변수는 궐련형 BS12_37(평생)·BS12_47(현재), 액상형 BS12_1(평생)·BS12_2(최근 1달)이며(책자 158~159쪽), 담배제품 현재사용률 sm_t 산출 프로그램은 책자 42쪽 표 18에 있다. 포함 여부는 팀 결정 필요.",
   "- 결측 처리: 생활습관 4변수 complete case로 모형 1~3 동일표본을 쓸지, 신체활동 결측을 별도 범주로 둔 민감도 분석을 추가할지.",
   "- 가족력 '모름' 별도 범주 유지 확정.",
-  "- 분석대상 연령과 세은 제외 기준 확정 후 추가 제외 인원 재계산.", "",
+  "- 분석대상 연령(19세 이상 또는 30세 이상) 확정. 두 경우의 추가 제외 인원은 위 표에 계산해 두었다.", "",
   "## 재실행", "", "```r",
   "source(\"R/check_lifestyle_variables.R\", encoding = \"UTF-8\")", "```", "",
   "## 근거", "",
